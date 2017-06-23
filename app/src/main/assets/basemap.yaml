@@ -1,0 +1,416 @@
+global:
+    settings:
+        extrude_buildings: false
+        display_address_numbers: true
+        display_address_names: true
+        display_country_names: true
+        display_region_names: true
+        display_city_names: true
+        display_capital_names: true
+        display_boundaries: true
+    color:
+        land: '#f2efe9'
+        water: '#b5d0d0'
+        major_road: '#e892a2'
+        minor_road: '#ffffff'
+        path: '#dddddd'
+        rail: '#d5d5d5'
+        commercial: '#ffe0e0'
+        social: '#f0f0d8'
+        park: '#cdebb0'
+        pitch: '#d6e9b9'
+        building: '#f0f0f0'
+        major_boundary: '#999999'
+        minor_boundary: '#bbbbbb'
+        text:
+            street_name: '#666666'
+            house_number: '#aaaaaa'
+            minor_text: '#999999'
+        outline:
+            building: '#cdcdcd'
+            pitch: '#e0efca'
+    text_font_family: 'Open Sans'
+    sdk_mapzen_api_key: ''
+
+sources:
+    mapzen:
+        type: MVT
+        url:  http://tile.mapzen.com/mapzen/vector/v1/all/{z}/{x}/{y}.mvt
+        max_zoom: 16
+
+camera:
+    type: isometric
+
+fonts:
+    Open Sans:
+        - weight: normal # Regular
+          url: fonts/OpenSans-Regular.woff
+
+scene:
+    background:
+        color: global.color.land
+
+layers:
+    earth:
+        data: { source: mapzen, layer: earth}
+        draw:
+            polygons:
+                order: 400
+                color: global.color.land
+    water:
+        data: { source: mapzen, layer: water}
+        filter: {not: {is_tunnel: true}}
+        draw:
+            lines:
+                order: 401
+                color: global.color.water
+                width: [[10, 1px], [16, 2px], [19, 10px]]
+            polygons:
+                order: 401
+                color: global.color.water
+
+    roads:
+        data: {source: mapzen, layer: roads}
+        major-roads:
+            filter: {kind_detail: [motorway, motorway_link, trunk, trunk_link,  primary, primary_link]}
+            draw:
+                lines:
+                    visible: false
+                    order: 403
+                    color: global.color.major_road
+                    width: [[12, 2px], [14, 3px], [14, 3px], [17, 15px], [18, 18px], [19, 20px], [20, 50px]]
+                    cap: round
+            motorway:
+                filter: {kind_detail: [motorway],
+                    $zoom : {min: 6}}
+                draw:
+                    lines:
+                        visible: true
+            trunk:
+                filter: {kind_detail: [motorway_link, trunk],
+                    $zoom : {min: 9}}
+                draw:
+                    lines:
+                        visible: true
+            primary:
+                filter: {kind_detail: [trunk_link, primary, primary_link],$zoom : {min: 12}}
+                draw:
+                    lines:
+                        visible: true
+
+        secondary-roads:
+            filter: {
+                kind_detail: [secondary, secondary_link], $zoom: { min: 12 }}
+            draw:
+                lines:
+                    order: 402
+                    color: global.color.minor_road
+                    width: [[12, 1px], [15, 6px], [17, 10px], [18, 20px], [19, 40px], [20, 80px]]
+                    outline:
+                        width: 0px
+
+        tertiary-roads:
+            filter: {
+                kind_detail: [tertiary, secondary_link], $zoom: { min: 13 }}
+            draw:
+                lines:
+                    order: 402
+                    color: global.color.minor_road
+                    width: [[12, 1px], [15, 6px], [17, 10px], [18, 12px], [19, 20px], [20, 50px]]
+                    outline:
+                        width: 0px
+
+        minor-roads:
+            filter: {kind: minor_road, $zoom: { min: 14 }}
+            draw:
+                lines:
+                    order: 402
+                    color: global.color.minor_road
+                    width: [[12, 1px], [15, 2px], [17, 7px], [18, 12px], [19, 20px], [20, 50px]]
+                    cap: round
+
+        path:
+            filter: { kind: [path], $zoom: { min: 16 } }
+            draw:
+                lines:
+                    order: 402
+                    color: global.color.path
+                    width: [[13, 1px], [16, 2px], [17, 4px], [18, 7px], [19, 10px]]
+
+        pedestrian:
+            filter: { kind_detail: pedestrian, $zoom: { min: 14 }}
+            draw:
+                lines:
+                    order: 402
+                    color: global.color.minor_road
+                    width: [[15, 2px], [17, 7px], [18, 10px]]
+                    cap: round
+
+        street_names:
+            filter: { not: {kind: rail}, $zoom: { min: 13 }}
+            draw:
+                text:
+                    buffer: 20px
+                    font:
+                        family: global.text_font_family
+                        size: [[12, 8px], [17, 12px],  [19, 20px]]
+                        weight: normal
+                        fill: global.color.text.street_name
+            major_roads:
+                filter: {kind_detail: [motorway, trunk, primary]}
+                draw:
+                    text:
+                        priority: 1
+            middle_roads:
+                filter: {kind_detail: [secondary, tertiary]}
+                draw:
+                    text:
+                        priority: 2
+            minor_roads:
+                filter: {kind_detail: [residential, path, footway]}
+                draw:
+                    text:
+                        priority: 3
+        rail:
+            filter: { kind: [rail, tram], not: {kind_detail: subway}, not: {is_tunnel: true}, $zoom: { min: 11 }}
+            draw:
+                lines:
+                    order: 402
+                    color: global.color.rail
+                    width: 1px
+
+    buildings:
+        data: { source: mapzen, layer: buildings }
+        filter: { $zoom: { min: 16 } }
+        draw:
+            polygons:
+                order: 438
+                color: global.color.building
+                extrude: global.settings.extrude_buildings
+            outline:
+                style: lines
+                order: 439
+                color: global.color.outline.building
+                width: [[16, 0.5px], [18, 1px]]
+        building_numbers:
+            filter: { $zoom: { min: 18 }, $geometry: point}
+            visible: global.settings.display_address_numbers
+            draw:
+                text:
+                    text_source: addr_housenumber
+                    font:
+                        family: global.text_font_family
+                        size: 10px
+                        fill: global.color.text.house_number
+
+
+    landuse:
+        data: { source: mapzen, layer: landuse }
+        bridge:
+            filter: {kind: bridge, $zoom: { min: 11}}
+            draw:
+                polygons:
+                    color: global.color.land
+                    order: 402
+        park:
+            filter: {kind: [park, forest, grass, village_green], $zoom: { min: 11}}
+            draw:
+                polygons:
+                    color: global.color.park
+                    order: 402
+        pitch:
+            filter: {kind: [pitch, golf_course], $zoom: { min: 13}}
+            draw:
+                polygons:
+                    color: global.color.pitch
+                    order: 403
+                outline:
+                    style: lines
+                    color: global.color.outline.pitch
+                    order: 403
+                    width: 2
+        commercial:
+            filter: {kind: [commercial, retail], $zoom: { min: 11}}
+            draw:
+                polygons:
+                    color: global.color.commercial
+                    order: 402
+
+        social:
+            filter: {kind: [hospital, school, college, university, stadium, sports_centre], $zoom: { min: 11}}
+            draw:
+                polygons:
+                    color: global.color.social
+                    order: 402
+
+    places:
+        data: { source: mapzen, layer: places }
+        filter:
+            name: true
+        draw:
+            text:
+                visible: false
+                buffer: 3px
+                font:
+                    family: global.text_font_family
+                    fill: global.color.text.street_name
+                    size: [[8, 10px], [12, 12px],[15, 15px]]
+
+        country:
+            filter:
+                kind: country
+                $zoom: { min: 3, max: 9 }
+            draw:
+                text:
+                    priority: 1
+                    visible: global.settings.display_country_names
+                    buffer: 8px
+                    font:
+                        fill: global.color.text.street_name
+                        size: [[3, 10px], [6, 14px], [9, 30px]]
+                        weight: 800
+                        transform: uppercase
+
+        region:
+            filter:
+                kind: [region]
+                $zoom: { min: 5, max: 9 }
+            draw:
+                text:
+                    priority: 2
+                    visible: global.settings.display_region_names
+                    buffer: 10px
+                    font:
+                        fill: global.color.text.minor_text
+                        transform: uppercase
+                        size: [[6, 12px], [9, 20px]]
+
+        populated-places:
+            filter:
+                kind: locality
+                $zoom: { min: 5 }
+            draw:
+                text:
+                    priority: 1
+                    visible: false
+                    buffer: 30px
+                    font:
+                        size: [[5,9px],[8,10px],[12,11px]]
+                        fill: global.color.text.street_name
+
+            population-10m-up:
+                filter:
+                    population: { min: 10000000 }
+                    country_capital: false
+                    $zoom: { min: 6 }
+                draw:
+                    text:
+                        visible: global.settings.display_city_names
+                        font:
+                            size: [[6,11px],[6,17px],[8,19px],[12,21x],[13,0px]]
+            population-1m-10m:
+                filter:
+                    population: { min: 1000000, max: 10000000 }
+                    country_capital: false
+                    $zoom: { min: 6 }
+                draw:
+                    text:
+                        visible: global.settings.display_city_names
+                        font:
+                            size: [[6,10px],[6,16px],[8,18px],[12,20px],[13,0px]]
+
+            population-100k-1m:
+                filter:
+                    population: { min: 100000, max: 1000000 }
+                    country_capital: false
+                    $zoom: { min: 7 }
+                draw:
+                    text:
+                        visible: global.settings.display_city_names
+                        font:
+                            size: [[6,10px],[8,12px],[10,14px],[12,16px],[13,0px]]
+
+            population-10k-100k:
+                filter:
+                    population: { min: 10000, max: 100000 }
+                    country_capital: false
+                    $zoom: { min: 8 }
+                draw:
+                    text:
+                        visible: global.settings.display_city_names
+                        font:
+                            size: [[6,10px],[8,12px],[14,14px],[15,0px]]
+
+            population-1k-10k:
+                filter:
+                    population: { min: 1000, max: 10000 }
+                    country_capital: false
+                    $zoom: { min: 9 }
+                draw:
+                    text:
+                        visible: global.settings.display_city_names
+                        font:
+                            size: [[9,10px],[14,12px],[15,0px]]
+
+            population-under-1k:
+                filter:
+                    population: { max: 1000 }
+                    country_capital: false
+                    $zoom: { min: 10 }
+                draw:
+                    text:
+                        visible: global.settings.display_city_names
+                        font:
+                            size: [[9,10px],[14,11px],[15,0px]]
+
+            capital:
+                filter:
+                    country_capital: true
+                    $zoom: { min: 5 , max: 12}
+                draw:
+                    text:
+                        visible: global.settings.display_capital_names
+                        font:
+                            size: [[5,13px],[6,15px],[8,18px],[12,21px]]
+                            weight: 700
+
+        neighbourhoods:
+            filter:
+                kind: [macrohood, neighbourhood, borough]
+                $zoom: { min: 10 , max: 16}
+            draw:
+                text:
+                    priority: 1
+                    buffer: 30px
+                    visible: global.settings.display_region_names
+                    text_wrap: 10
+                    max_lines: 2
+                    font:
+                        size: [[10,10px],[12,12px],[14,14px],[16,16px]]
+                        fill: global.color.text.minor_text
+                        transform: uppercase
+
+    boundaries:
+        data: { source: mapzen, layer: boundaries }
+        country:
+            filter:
+                any:
+                    - kind: country
+                    - admin_level: 2
+                $zoom: {max: 10}
+            draw:
+                lines:
+                    color: global.color.major_boundary
+                    width: 2px
+                    order: 404
+        region:
+            filter:
+                not:
+                    - kind: country
+                    - admin_level: 2
+                $zoom: {max: 10}
+            draw:
+                lines:
+                    color: global.color.minor_boundary
+                    width: 1.5px
+                    order: 403
